@@ -2,7 +2,7 @@
 
 Treat-Tracker is an offline-first iPhone application for quickly recording treats given to dogs and cats and reviewing patterns over time.
 
-This repository handoff contains product and technical design documents. It intentionally does not include an application scaffold yet.
+This repository contains the product and technical design documents and an Expo application scaffold built from them.
 
 ## Product goals
 
@@ -55,15 +55,24 @@ e2e/                    Maestro flows
 - [Delivery roadmap](docs/roadmap.md)
 - [Agent guidance](AGENTS.md)
 
-## Suggested first implementation
+## Getting started
 
-1. Scaffold an Expo TypeScript application with Expo Router.
-2. Add the local database schema and migrations.
-3. Implement pet setup and the Today screen.
-4. Implement quick-add and custom treat entry.
-5. Add history editing and deletion.
-6. Add deterministic trend calculations and tests.
-7. Configure EAS and validate on a physical iPhone.
+```bash
+npm install
+npm start          # Expo dev server; open with Expo Go on an iPhone
+npm run typecheck  # tsc --noEmit
+npm test           # Jest
+```
+
+## Implementation progress
+
+1. ✅ Scaffold an Expo TypeScript application with Expo Router.
+2. ✅ Add the local database schema and migrations.
+3. 🚧 Implement pet setup and the Today screen — onboarding and Today are in place; the pet switcher, day navigation, and budget display are not.
+4. 🚧 Implement quick-add and custom treat entry — quick-add with Undo works; the add-treat bottom sheet and catalog entry are not built.
+5. ⬜ Add history editing and deletion — repository methods exist (`updateEvent`, `softDeleteEvent`, `restoreEvent`); the History screen is a placeholder.
+6. 🚧 Add deterministic trend calculations and tests — `src/domain` and its tests are done; charts are not built.
+7. ⬜ Configure EAS and validate on a physical iPhone — `eas.json` has the three profiles; no build has been run.
 
 Install current package releases through the package manager rather than copying version numbers from these documents.
 
@@ -78,4 +87,10 @@ Install current package releases through the package manager rather than copying
 
 ## Status
 
-The project is in the design/handoff stage. See `docs/roadmap.md` for the recommended implementation sequence and MVP completion criteria.
+Early implementation. The domain and persistence layers are built and tested; Today,
+onboarding, and Insights render real data; History and Settings are placeholders.
+See `docs/roadmap.md` for the remaining sequence and MVP completion criteria.
+
+Verified so far: `npm run typecheck` passes, 47 Jest tests pass, and
+`npx expo export --platform ios` succeeds. The app has not yet been run on a
+physical iPhone, so no on-device behavior is confirmed.
