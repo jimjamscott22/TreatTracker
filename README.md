@@ -53,6 +53,7 @@ e2e/                    Maestro flows
 - [UX flows](docs/ux-flows.md)
 - [Visual design](docs/visual-design.md)
 - [Delivery roadmap](docs/roadmap.md)
+- [Design canvas divergence](docs/design-canvas-divergence.md)
 - [Agent guidance](AGENTS.md)
 
 ## Getting started

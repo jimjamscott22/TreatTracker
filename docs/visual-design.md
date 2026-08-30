@@ -4,6 +4,13 @@
 
 Treat-Tracker should feel calm, tactile, and practical: closer to a well-designed field notebook than a clinical dashboard or cartoon pet game. Friendly details are welcome, but tracking information stays legible and restrained.
 
+## Relationship to the design canvas
+
+A Claude Design canvas for this app (exported as "TreatCompiler") specifies a
+different visual direction: a sharp-cornered Modernist treatment in cool greys
+with a red-orange accent. This document takes precedence over it. See
+[design canvas divergence](design-canvas-divergence.md) for the full comparison.
+
 ## Design principles
 
 - **Glanceable:** today's status is understandable in seconds.
