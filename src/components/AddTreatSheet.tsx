@@ -25,6 +25,7 @@ import {
 import { deviceTimeZone, localDateOf, utcOffsetMinutesOf } from '../domain/dates';
 import { toMilli } from '../domain/units';
 import { MIN_TOUCH_TARGET, radii, spacing, typography, useTheme } from '../theme';
+import { useDebouncedValue } from '../utils/useDebouncedValue';
 import { Button } from './Button';
 import { QuickAddTile } from './QuickAddTile';
 
@@ -40,17 +41,6 @@ type Props = {
 };
 
 const SEARCH_DEBOUNCE_MS = 300;
-
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delayMs);
-    return () => clearTimeout(timer);
-  }, [value, delayMs]);
-
-  return debounced;
-}
 
 function parseQuantityMilli(raw: string): number | null {
   const trimmed = raw.trim();
