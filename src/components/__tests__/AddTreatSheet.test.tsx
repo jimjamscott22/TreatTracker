@@ -4,6 +4,16 @@ import { eventsRepository, treatsRepository } from '../../db';
 import { ThemeProvider } from '../../theme';
 import { AddTreatSheet } from '../AddTreatSheet';
 
+jest.mock('react-native/Libraries/Components/Keyboard/KeyboardAvoidingView', () => {
+  const React = require('react') as typeof import('react');
+  const { View } = require('react-native') as typeof import('react-native');
+  return {
+    __esModule: true,
+    default: ({ children }: { children: React.ReactNode }) =>
+      React.createElement(View, null, children),
+  };
+});
+
 jest.mock('../../db', () => ({
   getDatabase: jest.fn().mockResolvedValue({}),
   treatsRepository: {
@@ -26,7 +36,28 @@ jest.mock('../../db', () => ({
 const mockedTreats = treatsRepository as jest.Mocked<typeof treatsRepository>;
 const mockedEvents = eventsRepository as jest.Mocked<typeof eventsRepository>;
 
+async function renderSheet() {
+  const onRecorded = jest.fn();
+  const onClose = jest.fn();
+  await render(
+    <ThemeProvider>
+      <AddTreatSheet
+        visible
+        petId="pet-1"
+        petName="Miso"
+        onClose={onClose}
+        onRecorded={onRecorded}
+      />
+    </ThemeProvider>,
+  );
+  return { onRecorded, onClose };
+}
+
 describe('AddTreatSheet', () => {
+  beforeAll(() => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockedTreats.listQuickAddTreats.mockResolvedValue([]);
@@ -34,41 +65,20 @@ describe('AddTreatSheet', () => {
   });
 
   it('offers to create a new treat with real quotes, not HTML entities', async () => {
-    render(
-      <ThemeProvider>
-        <AddTreatSheet
-          visible
-          petId="pet-1"
-          petName="Miso"
-          onClose={jest.fn()}
-          onRecorded={jest.fn()}
-        />
-      </ThemeProvider>,
-    );
+    await renderSheet();
 
-    fireEvent.changeText(await screen.findByLabelText('Search treats'), 'Duck strips');
+    await fireEvent.changeText(screen.getByPlaceholderText('Search treats'), 'Duck strips');
 
     expect(await screen.findByText('Create "Duck strips"')).toBeTruthy();
     expect(screen.queryByText(/&ldquo;|&rdquo;|&quot;/)).toBeNull();
   });
 
   it('creates a catalog treat and records an event when "Use once" is off', async () => {
-    const onRecorded = jest.fn();
-    render(
-      <ThemeProvider>
-        <AddTreatSheet
-          visible
-          petId="pet-1"
-          petName="Miso"
-          onClose={jest.fn()}
-          onRecorded={onRecorded}
-        />
-      </ThemeProvider>,
-    );
+    const { onRecorded } = await renderSheet();
 
-    fireEvent.changeText(await screen.findByLabelText('Search treats'), 'Duck strips');
-    fireEvent.press(await screen.findByText('Create "Duck strips"'));
-    fireEvent.press(await screen.findByText('Save and record'));
+    await fireEvent.changeText(screen.getByPlaceholderText('Search treats'), 'Duck strips');
+    await fireEvent.press(await screen.findByText('Create "Duck strips"'));
+    await fireEvent.press(await screen.findByText('Save and record'));
 
     await waitFor(() => {
       expect(mockedEvents.recordNewCatalogTreat).toHaveBeenCalledWith(
@@ -83,23 +93,12 @@ describe('AddTreatSheet', () => {
   });
 
   it('records a one-off event with no catalog treat when "Use once" is on', async () => {
-    const onRecorded = jest.fn();
-    render(
-      <ThemeProvider>
-        <AddTreatSheet
-          visible
-          petId="pet-1"
-          petName="Miso"
-          onClose={jest.fn()}
-          onRecorded={onRecorded}
-        />
-      </ThemeProvider>,
-    );
+    const { onRecorded } = await renderSheet();
 
-    fireEvent.changeText(await screen.findByLabelText('Search treats'), 'Leftover chicken');
-    fireEvent.press(await screen.findByText('Create "Leftover chicken"'));
-    fireEvent(screen.getByLabelText('Use once'), 'valueChange', true);
-    fireEvent.press(await screen.findByText('Record treat'));
+    await fireEvent.changeText(screen.getByPlaceholderText('Search treats'), 'Leftover chicken');
+    await fireEvent.press(await screen.findByText('Create "Leftover chicken"'));
+    await fireEvent(screen.getByLabelText('Use once'), 'valueChange', true);
+    await fireEvent.press(await screen.findByText('Record treat'));
 
     await waitFor(() => {
       expect(mockedEvents.recordEvent).toHaveBeenCalledWith(
