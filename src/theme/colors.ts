@@ -1,9 +1,10 @@
 /**
  * Color tokens from docs/visual-design.md.
  *
- * The light values are the documented starting palette. They are NOT yet proof
- * of contrast compliance -- docs/visual-design.md requires every text/background
- * pairing to be verified with automated and manual checks before release.
+ * The light values are the documented starting palette, adjusted below where a
+ * WCAG check found a failure. Every text/background pairing must still be
+ * verified with automated and manual checks before release, per
+ * docs/visual-design.md.
  */
 
 export type ColorTokens = {
@@ -33,7 +34,13 @@ export const lightColors: ColorTokens = {
   ink: '#25241F',
   mutedInk: '#69665D',
   line: '#D8D1C3',
-  accent: '#C75D3A',
+  /**
+   * Darkened from the documented #C75D3A: that value was 3.75:1 as body text
+   * on canvas and 4.09:1 as button text, both below the 4.5:1 WCAG AA minimum
+   * for normal-size text. This shade keeps the same hue and clears 4.5:1
+   * against canvas, surface, and as white text on this background.
+   */
+  accent: '#AB4F31',
   accentSoft: '#F2D8C9',
   positive: '#39745B',
   focus: '#1D64A8',
