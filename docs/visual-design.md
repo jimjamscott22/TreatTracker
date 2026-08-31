@@ -43,12 +43,12 @@ Initial light theme:
 | `ink` | `#25241F` | Primary text |
 | `mutedInk` | `#69665D` | Secondary text |
 | `line` | `#D8D1C3` | Dividers and borders |
-| `accent` | `#C75D3A` | Primary actions |
+| `accent` | `#AB4F31` | Primary actions |
 | `accentSoft` | `#F2D8C9` | Selected states |
 | `positive` | `#39745B` | Confirmed/saved states |
 | `focus` | `#1D64A8` | Focus indication |
 
-These are starting values, not proof of contrast compliance. Verify every text/background pairing with automated and manual checks. Provide a true dark theme before release if the application follows the system appearance setting.
+These are starting values; most still need proof of contrast compliance. `accent` is the one exception: the originally documented `#C75D3A` measured 3.75:1 as body text on `canvas` and 4.09:1 as button text, both below the 4.5:1 WCAG AA minimum for normal-size text, so it was darkened to `#AB4F31` (same hue, ≥4.5:1 against `canvas` and `surface` in both directions). Verify every remaining text/background pairing with automated and manual checks. Provide a true dark theme before release if the application follows the system appearance setting.
 
 Pet profiles may select from a curated accessible accent palette. Accent must not be the only indication of the active pet.
 

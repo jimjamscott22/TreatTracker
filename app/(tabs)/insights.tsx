@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Card, EmptyState } from '../../src/components';
 import { eventsRepository, getDatabase } from '../../src/db';
@@ -31,7 +31,7 @@ export default function InsightsScreen() {
   const rangeDays = useUiStore((state) => state.insightsRangeDays);
   const setRange = useUiStore((state) => state.setInsightsRange);
 
-  const { data } = useAsyncData(async () => {
+  const { data, loading } = useAsyncData(async () => {
     if (!pet) return null;
 
     const current = rangeEndingOn(localDateOf(new Date()), rangeDays);
@@ -83,7 +83,11 @@ export default function InsightsScreen() {
         })}
       </View>
 
-      {!data || data.currentSummary.eventCount === 0 ? (
+      {loading && !data ? (
+        <View style={styles.loading}>
+          <ActivityIndicator color={colors.accent} />
+        </View>
+      ) : !data || data.currentSummary.eventCount === 0 ? (
         <EmptyState
           title="Nothing recorded yet"
           body={data ? `No entries for ${formatRangeLabel(data.current)}.` : undefined}
@@ -156,6 +160,7 @@ function formatDelta(absolute: number): string {
 
 const styles = StyleSheet.create({
   content: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
+  loading: { paddingVertical: spacing.xl, alignItems: 'center' },
   segmented: { flexDirection: 'row', gap: spacing.xs },
   segment: {
     flex: 1,

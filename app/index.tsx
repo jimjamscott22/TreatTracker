@@ -1,8 +1,7 @@
 import { Redirect } from 'expo-router';
-import { ActivityIndicator, View } from 'react-native';
 
+import { LoadingState } from '../src/components';
 import { usePets } from '../src/features/pets/usePets';
-import { useTheme } from '../src/theme';
 
 /**
  * Entry gate.
@@ -13,15 +12,8 @@ import { useTheme } from '../src/theme';
  */
 export default function Index() {
   const { data: pets, loading } = usePets();
-  const { colors } = useTheme();
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.canvas }}>
-        <ActivityIndicator color={colors.accent} />
-      </View>
-    );
-  }
+  if (loading) return <LoadingState />;
 
   return pets && pets.length > 0 ? <Redirect href="/(tabs)" /> : <Redirect href="/onboarding" />;
 }

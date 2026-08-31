@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 
-import { Button, Card, EmptyState, ProgressBar } from '../../src/components';
+import { Button, Card, EmptyState, LoadingState, ProgressBar } from '../../src/components';
 import { eventsRepository, getDatabase } from '../../src/db';
 import type { Treat, TreatEvent } from '../../src/domain/entities';
 import { formatKcal, formatQuantity } from '../../src/domain/units';
@@ -54,7 +54,7 @@ export default function TodayScreen() {
     AccessibilityInfo.announceForAccessibility('Entry removed');
   }
 
-  if (petLoading || (loading && !data)) return null;
+  if (petLoading || (loading && !data)) return <LoadingState />;
 
   if (!pet) {
     return (
