@@ -1,6 +1,24 @@
 import { recordNewCatalogTreat } from '../repositories/events';
 import type { SqliteLike, SqlValue } from '../types';
 
+jest.mock('../../utils/ids', () => {
+  let sequence = 0;
+  return {
+    newId: () => {
+      sequence += 1;
+      return `id-${sequence}`;
+    },
+  };
+});
+
+function param(params: SqlValue[], index: number): SqlValue {
+  const value = params[index];
+  if (value === undefined) {
+    throw new Error(`Missing SQL parameter at index ${index}`);
+  }
+  return value;
+}
+
 /**
  * In-memory stand-in for expo-sqlite, scoped to what
  * `recordNewCatalogTreat` issues: two INSERTs and two id-keyed SELECTs.
@@ -19,80 +37,50 @@ function createFakeDb(): SqliteLike {
     },
     async runAsync(source: string, params: SqlValue[]) {
       if (source.includes('INSERT INTO treats')) {
-        const [
+        const id = String(param(params, 0));
+        treats.set(id, {
           id,
-          name,
-          brand,
-          category,
-          default_quantity_milli,
-          unit,
-          kcal_per_unit_milli,
-          is_favorite,
-          last_used_at,
-          created_at,
-          updated_at,
-        ] = params;
-        treats.set(id as string, {
-          id,
-          name,
-          brand,
-          category,
-          default_quantity_milli,
-          unit,
-          kcal_per_unit_milli,
-          is_favorite,
-          last_used_at,
-          created_at,
-          updated_at,
+          name: param(params, 1),
+          brand: param(params, 2),
+          category: param(params, 3),
+          default_quantity_milli: param(params, 4),
+          unit: param(params, 5),
+          kcal_per_unit_milli: param(params, 6),
+          is_favorite: param(params, 7),
+          last_used_at: param(params, 8),
+          created_at: param(params, 9),
+          updated_at: param(params, 10),
           deleted_at: null,
         });
       } else if (source.includes('INSERT INTO treat_events')) {
-        const [
+        const id = String(param(params, 0));
+        events.set(id, {
           id,
-          pet_id,
-          treat_id,
-          quantity_milli,
-          occurred_at,
-          local_date,
-          timezone,
-          utc_offset_minutes,
-          note,
-          treat_name_snapshot,
-          brand_snapshot,
-          category_snapshot,
-          unit_snapshot,
-          kcal_per_unit_milli_snapshot,
-          kcal_total_milli,
-          created_at,
-          updated_at,
-        ] = params;
-        events.set(id as string, {
-          id,
-          pet_id,
-          treat_id,
-          quantity_milli,
-          occurred_at,
-          local_date,
-          timezone,
-          utc_offset_minutes,
-          note,
-          treat_name_snapshot,
-          brand_snapshot,
-          category_snapshot,
-          unit_snapshot,
-          kcal_per_unit_milli_snapshot,
-          kcal_total_milli,
-          created_at,
-          updated_at,
+          pet_id: param(params, 1),
+          treat_id: param(params, 2),
+          quantity_milli: param(params, 3),
+          occurred_at: param(params, 4),
+          local_date: param(params, 5),
+          timezone: param(params, 6),
+          utc_offset_minutes: param(params, 7),
+          note: param(params, 8),
+          treat_name_snapshot: param(params, 9),
+          brand_snapshot: param(params, 10),
+          category_snapshot: param(params, 11),
+          unit_snapshot: param(params, 12),
+          kcal_per_unit_milli_snapshot: param(params, 13),
+          kcal_total_milli: param(params, 14),
+          created_at: param(params, 15),
+          updated_at: param(params, 16),
           deleted_at: null,
         });
       }
       return { changes: 1 };
     },
     async getFirstAsync<T>(source: string, params: SqlValue[]): Promise<T | null> {
-      const id = params[0] as string;
-      if (source.includes('FROM treats')) return (treats.get(id) as T) ?? null;
+      const id = String(param(params, 0));
       if (source.includes('FROM treat_events')) return (events.get(id) as T) ?? null;
+      if (source.includes('FROM treats')) return (treats.get(id) as T) ?? null;
       return null;
     },
   };
