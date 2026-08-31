@@ -117,7 +117,7 @@ Expo Go does not support **remote/push** notifications as of Expo SDK 53+ (this 
 1. ✅ Scaffold an Expo TypeScript application with Expo Router.
 2. ✅ Add the local database schema and migrations.
 3. 🚧 Implement pet setup and the Today screen — onboarding and Today are in place; the pet switcher, day navigation, and budget display are not.
-4. 🚧 Implement quick-add and custom treat entry — quick-add with Undo works; the add-treat bottom sheet and catalog entry are not built.
+4. 🚧 Implement quick-add and custom treat entry — quick-add with Undo and the add-treat sheet (header **Add** + empty-state **Add a treat**) are on this branch; catalog editing from Settings is not.
 5. ⬜ Add history editing and deletion — repository methods exist (`updateEvent`, `softDeleteEvent`, `restoreEvent`); the History screen is a placeholder.
 6. 🚧 Add deterministic trend calculations and tests — `src/domain` and its tests are done; charts are not built.
 7. ⬜ Configure EAS and validate on a physical iPhone — `eas.json` has the three profiles; no build has been run.
@@ -139,6 +139,8 @@ Early implementation. The domain and persistence layers are built and tested; To
 onboarding, and Insights render real data; History and Settings are placeholders.
 See `docs/roadmap.md` for the remaining sequence and MVP completion criteria.
 
-Verified so far: `npm run typecheck` passes, 47 Jest tests pass, and
-`npx expo export --platform ios` succeeds. The app has not yet been run on a
-physical iPhone, so no on-device behavior is confirmed.
+Verified so far: `npm run typecheck` passes, Jest tests pass, and
+`npx expo export --platform ios` succeeds. Cloud-agent pull requests do **not**
+appear on a physical iPhone automatically — Expo Go loads whatever branch the
+computer is serving with `npm start`. To try the add-treat flow, check out this
+feature branch locally, run `npm start`, and open the project in Expo Go.
