@@ -1,15 +1,24 @@
 import { deviceTimeZone, localDateOf, utcOffsetMinutesOf } from '../../domain/dates';
 import {
+  treatDraftSchema,
   treatEventDraftSchema,
   type LocalDate,
   type Treat,
+  type TreatDraft,
   type TreatEvent,
   type TreatEventDraft,
 } from '../../domain/entities';
 import { eventKcalMilli } from '../../domain/units';
 import { newId } from '../../utils/ids';
-import { toTreatEvent, type TreatEventRow } from '../mappers';
+import { fromBool, toTreat, toTreatEvent, type TreatEventRow, type TreatRow } from '../mappers';
 import type { SqliteLike } from '../types';
+
+const TREAT_SELECT = `
+  SELECT id, name, brand, category, default_quantity_milli, unit,
+         kcal_per_unit_milli, is_favorite, last_used_at,
+         created_at, updated_at, deleted_at
+  FROM treats
+`;
 
 const SELECT = `
   SELECT id, pet_id, treat_id, quantity_milli, occurred_at, local_date, timezone,
@@ -154,6 +163,113 @@ export async function recordEvent(
   const created = await getEvent(db, id);
   if (!created) throw new Error('Event was not persisted');
   return created;
+}
+
+/**
+ * Creates a catalog treat and records an event for it in one transaction.
+ *
+ * Avoids calling `createTreat` + `recordEvent` sequentially, since each opens
+ * its own transaction and SQLite does not support nesting.
+ */
+export async function recordNewCatalogTreat(
+  db: SqliteLike,
+  params: {
+    petId: string;
+    treatDraft: TreatDraft;
+    occurredAt?: Date;
+    note?: string | null;
+  },
+): Promise<{ treat: Treat; event: TreatEvent }> {
+  const treatInput = treatDraftSchema.parse(params.treatDraft);
+  const occurredAt = params.occurredAt ?? new Date();
+  const timezone = deviceTimeZone();
+  const now = new Date().toISOString();
+  const treatId = newId();
+  const eventId = newId();
+
+  const eventDraft = treatEventDraftSchema.parse({
+    petId: params.petId,
+    treatId,
+    quantityMilli: treatInput.defaultQuantityMilli,
+    occurredAt: occurredAt.toISOString(),
+    localDate: localDateOf(occurredAt, timezone ?? undefined),
+    timezone,
+    utcOffsetMinutes: utcOffsetMinutesOf(occurredAt, timezone ?? undefined),
+    note: params.note ?? null,
+    treatNameSnapshot: treatInput.name,
+    brandSnapshot: treatInput.brand,
+    categorySnapshot: treatInput.category,
+    unitSnapshot: treatInput.unit,
+    kcalPerUnitMilliSnapshot: treatInput.kcalPerUnitMilli,
+  });
+
+  const kcalTotalMilli = eventKcalMilli(
+    eventDraft.quantityMilli,
+    eventDraft.kcalPerUnitMilliSnapshot,
+  );
+
+  await db.withTransactionAsync(async () => {
+    await db.runAsync(
+      `INSERT INTO treats (
+         id, name, brand, category, default_quantity_milli, unit,
+         kcal_per_unit_milli, is_favorite, last_used_at,
+         created_at, updated_at, deleted_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        treatId,
+        treatInput.name,
+        treatInput.brand,
+        treatInput.category,
+        treatInput.defaultQuantityMilli,
+        treatInput.unit,
+        treatInput.kcalPerUnitMilli,
+        fromBool(treatInput.isFavorite),
+        eventDraft.occurredAt,
+        now,
+        now,
+      ],
+    );
+
+    await db.runAsync(
+      `INSERT INTO treat_events (
+         id, pet_id, treat_id, quantity_milli, occurred_at, local_date, timezone,
+         utc_offset_minutes, note, treat_name_snapshot, brand_snapshot,
+         category_snapshot, unit_snapshot, kcal_per_unit_milli_snapshot,
+         kcal_total_milli, created_at, updated_at, deleted_at
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      [
+        eventId,
+        eventDraft.petId,
+        eventDraft.treatId,
+        eventDraft.quantityMilli,
+        eventDraft.occurredAt,
+        eventDraft.localDate,
+        eventDraft.timezone,
+        eventDraft.utcOffsetMinutes,
+        eventDraft.note,
+        eventDraft.treatNameSnapshot,
+        eventDraft.brandSnapshot,
+        eventDraft.categorySnapshot,
+        eventDraft.unitSnapshot,
+        eventDraft.kcalPerUnitMilliSnapshot,
+        kcalTotalMilli,
+        now,
+        now,
+      ],
+    );
+  });
+
+  const treatRow = await db.getFirstAsync<TreatRow>(
+    `${TREAT_SELECT} WHERE id = ?`,
+    [treatId],
+  );
+  const eventRow = await db.getFirstAsync<TreatEventRow>(`${SELECT} WHERE id = ?`, [eventId]);
+
+  if (!treatRow || !eventRow) {
+    throw new Error('Catalog treat and event were not persisted');
+  }
+
+  return { treat: toTreat(treatRow), event: toTreatEvent(eventRow) };
 }
 
 /**
