@@ -69,6 +69,7 @@ Treats are often given casually by more than one person. By the end of the day, 
 - Record name, category, default quantity, unit, and optional calories per unit.
 - Provide starter categories but not a prescriptive food database.
 - Keep archived treats visible in historical entries.
+- Let a caregiver browse archived treats separately from the active catalog and restore one, since archiving is a soft delete rather than a permanent one.
 
 ### Event entry
 
