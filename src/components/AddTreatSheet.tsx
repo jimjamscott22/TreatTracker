@@ -256,19 +256,19 @@ export function AddTreatSheet({ visible, petId, petName, onClose, onRecorded }: 
       transparent
       onRequestClose={handleClose}
     >
-      <Pressable
-        style={styles.backdrop}
-        accessibilityRole="button"
-        accessibilityLabel="Dismiss add treat sheet"
-        onPress={handleClose}
-      />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.sheetContainer}
-        pointerEvents="box-none"
-      >
-        <View style={[styles.sheet, { backgroundColor: colors.surface }]}>
-          <View style={styles.sheetHeader}>
+      <View style={styles.overlay}>
+        <Pressable
+          style={styles.backdrop}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss add treat sheet"
+          onPress={handleClose}
+        />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.sheetContainer}
+        >
+          <View style={[styles.sheet, { backgroundColor: colors.surface }]}>
+            <View style={styles.sheetHeader}>
             <Text style={[typography.title2, { color: colors.ink }]}>
               {step === 'search' ? 'Add treat' : 'New treat'}
             </Text>
@@ -326,6 +326,12 @@ export function AddTreatSheet({ visible, petId, petName, onClose, onRecorded }: 
                   ))}
                 </View>
 
+                {!searchLoading && results.length === 0 && !trimmedQuery ? (
+                  <Text style={[typography.body, styles.emptyHint, { color: colors.mutedInk }]}>
+                    No treats yet. Type a name to create one.
+                  </Text>
+                ) : null}
+
                 {showCreateRow ? (
                   <Pressable
                     accessibilityRole="button"
@@ -341,7 +347,7 @@ export function AddTreatSheet({ visible, petId, petName, onClose, onRecorded }: 
                     ]}
                   >
                     <Text style={[typography.body, { color: colors.accent }]}>
-                      Create &ldquo;{trimmedQuery}&rdquo;
+                      {`Create "${trimmedQuery}"`}
                     </Text>
                   </Pressable>
                 ) : null}
@@ -527,25 +533,34 @@ export function AddTreatSheet({ visible, petId, petName, onClose, onRecorded }: 
                 </Text>
               ) : null}
 
-              <Button label="Save" onPress={() => void handleSave()} busy={saving} />
+              <Button
+                label={useOnce ? 'Record treat' : 'Save and record'}
+                onPress={() => void handleSave()}
+                busy={saving}
+              />
             </ScrollView>
           )}
-        </View>
-      </KeyboardAvoidingView>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   sheetContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
+    width: '100%',
   },
   sheet: {
+    width: '100%',
     borderTopLeftRadius: radii.sheet,
     borderTopRightRadius: radii.sheet,
     maxHeight: '90%',
@@ -590,6 +605,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.xs,
   },
+  emptyHint: { textAlign: 'center', paddingVertical: spacing.md },
   createRow: {
     minHeight: MIN_TOUCH_TARGET,
     borderRadius: radii.control,
