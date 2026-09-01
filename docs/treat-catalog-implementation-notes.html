@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Treat Catalog — Implementation Notes</title>
+<style>
+  :root {
+    --canvas: #F7F3EA;
+    --surface: #FFFDF8;
+    --ink: #25241F;
+    --muted-ink: #69665D;
+    --line: #D8D1C3;
+    --accent: #AB4F31;
+    --accent-soft: #F2D8C9;
+    --positive: #39745B;
+    --focus: #1D64A8;
+    --radius-card: 16px;
+    --radius-control: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+  }
+
+  .page {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+
+  header.hero {
+    margin-bottom: 40px;
+  }
+
+  .eyebrow {
+    display: inline-block;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 14px;
+  }
+
+  h1 {
+    font-size: 34px;
+    line-height: 1.15;
+    margin: 0 0 12px;
+    font-weight: 700;
+  }
+
+  .lede {
+    font-size: 17px;
+    color: var(--muted-ink);
+    margin: 0;
+    max-width: 640px;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+  .pill {
+    font-size: 13px;
+    color: var(--muted-ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 12px;
+  }
+
+  .pill strong { color: var(--ink); }
+
+  section {
+    margin-top: 44px;
+  }
+
+  h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  h2 .step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--surface);
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .section-intro {
+    color: var(--muted-ink);
+    margin: 0 0 18px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    padding: 20px 22px;
+    margin-bottom: 14px;
+  }
+
+  .card h3 {
+    margin: 0 0 6px;
+    font-size: 17px;
+    font-weight: 600;
+  }
+
+  .card .tag {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--muted-ink);
+    margin-bottom: 8px;
+  }
+
+  .card p {
+    margin: 0 0 10px;
+  }
+
+  .card p:last-child { margin-bottom: 0; }
+
+  .why {
+    border-left: 3px solid var(--focus);
+    background: #eef4fa;
+    padding: 10px 14px;
+    border-radius: 0 8px 8px 0;
+    margin-top: 10px;
+    color: #1c3c56;
+    font-size: 15px;
+  }
+
+  html[data-theme="dark"] .why,
+  .why.dark-safe {
+    color: inherit;
+  }
+
+  code, .code-inline {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.92em;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 1px 6px;
+    border-radius: 6px;
+  }
+
+  pre {
+    background: #1f1d17;
+    color: #f2ede1;
+    border-radius: var(--radius-control);
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+
+  pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+  }
+
+  ul.file-list {
+    list-style: none;
+    margin: 10px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+  }
+
+  ul.file-list li {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    font-size: 14.5px;
+  }
+
+  ul.file-list .badge {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 2px 7px;
+    border-radius: 6px;
+    color: var(--surface);
+    min-width: 46px;
+    text-align: center;
+  }
+
+  .badge.new { background: var(--positive); }
+  .badge.mod { background: var(--focus); }
+
+  ol.plain {
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  ol.plain li { margin-bottom: 6px; }
+
+  .timeline {
+    position: relative;
+    margin-left: 15px;
+    padding-left: 25px;
+    border-left: 2px solid var(--line);
+  }
+
+  .timeline .card {
+    position: relative;
+  }
+
+  .timeline .card::before {
+    content: "";
+    position: absolute;
+    left: -33px;
+    top: 22px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--canvas);
+  }
+
+  table.commits {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+    margin-top: 10px;
+  }
+
+  table.commits th, table.commits td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+
+  table.commits th {
+    color: var(--muted-ink);
+    font-weight: 600;
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    color: var(--muted-ink);
+    font-size: 13.5px;
+  }
+
+  .callout {
+    background: var(--accent-soft);
+    border-radius: var(--radius-card);
+    padding: 18px 20px;
+    margin-top: 16px;
+  }
+
+  .callout h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    color: var(--accent);
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  @media (max-width: 640px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <span class="eyebrow">Implementation notes</span>
+    <h1>Building the Treat Catalog screen</h1>
+    <p class="lede">
+      A step-by-step walkthrough of how the Treat Catalog feature was implemented for
+      Treat-Tracker, and — more importantly — <em>why</em> each step happened in the
+      order it did. This is written for a human reading the code afterward, not as a
+      changelog.
+    </p>
+    <div class="meta-row">
+      <span class="pill">Branch: <strong>jimjamscott22/treat-catalog-c7c5</strong></span>
+      <span class="pill">Feature: <strong>Treat catalog</strong> (docs/product-spec.md)</span>
+      <span class="pill">5 commits · 71 tests passing</span>
+    </div>
+  </header>
+
+  <section>
+    <h2><span class="step-number">1</span> Read the governing documents first</h2>
+    <p class="section-intro">
+      Before writing any code, the existing project documentation was read in the order
+      <code>AGENTS.md</code> specifies: product spec, architecture, data model, then the
+      relevant UX flow section.
+    </p>
+    <div class="card">
+      <span class="tag">What</span>
+      <p>
+        Read <code>docs/product-spec.md</code>, <code>docs/architecture.md</code>,
+        <code>docs/data-model.md</code>, and <code>docs/ux-flows.md</code> to find every
+        mention of the treat catalog: what actions it must support (create, edit,
+        archive, favorite, search), where it lives in the app (reached through
+        Settings), and what invariants it must respect (editing a catalog treat must
+        never rewrite a past event's snapshot).
+      </p>
+      <div class="why">
+        <strong>Why first:</strong> <code>AGENTS.md</code> is explicit that
+        implementation and documentation must not silently diverge. Reading the spec
+        before coding means the feature's scope (and its boundaries — no barcode
+        scanning, no health claims, no accounts) is known up front, rather than
+        discovered halfway through and requiring rework.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="step-number">2</span> Explore the existing codebase</h2>
+    <p class="section-intro">
+      Every relevant existing file was read before writing anything new: the domain
+      entities and validation schemas, the SQLite repositories, the mappers between
+      SQLite rows and domain objects, the existing <code>AddTreatSheet</code> component,
+      the theme tokens, and the one existing test file for that sheet.
+    </p>
+    <div class="card">
+      <span class="tag">What was inspected</span>
+      <ul class="file-list">
+        <li><span class="badge mod">read</span> <code>src/domain/entities.ts</code> — the <code>Treat</code> type and its Zod validation schema already existed and needed no changes.</li>
+        <li><span class="badge mod">read</span> <code>src/db/repositories/treats.ts</code> — <code>createTreat</code>, <code>updateTreat</code>, <code>setTreatFavorite</code>, and <code>archiveTreat</code> already existed; only listing/searching for a management screen and un-archiving were missing.</li>
+        <li><span class="badge mod">read</span> <code>src/components/AddTreatSheet.tsx</code> and its test — the existing "create a treat while recording an entry" flow, to avoid duplicating or breaking it.</li>
+        <li><span class="badge mod">read</span> theme tokens, <code>Button</code>/<code>Card</code>/<code>EmptyState</code>/<code>QuickAddTile</code> components, and the fake-in-memory-SQLite pattern used in <code>events.test.ts</code> and <code>migrate.test.ts</code>.</li>
+      </ul>
+      <div class="why">
+        <strong>Why:</strong> The project already has strong conventions — repositories
+        never leak SQL into UI code, domain validation happens at the form boundary with
+        Zod, tests fake the narrow <code>SqliteLike</code> interface rather than a real
+        database, and every screen already has an established visual language. Matching
+        those conventions (instead of introducing new patterns) keeps the new feature
+        indistinguishable in style from the rest of the app.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="step-number">3</span> Prepare the environment and confirm a clean baseline</h2>
+    <div class="card">
+      <span class="tag">What</span>
+      <p>
+        Ran <code>npm install</code> (the sandbox had no <code>node_modules</code> yet),
+        then ran <code>tsc --noEmit</code> and the full Jest suite <em>before</em> making
+        any change, to record a known-good baseline (7 test suites, 52 tests passing).
+      </p>
+      <div class="why">
+        <strong>Why:</strong> Per the <em>verification-before-completion</em> habit this
+        session followed, you should know what "passing" looked like before your change,
+        so that any new failure can be attributed to something you did, not pre-existing
+        breakage.
+      </div>
+    </div>
+    <div class="card">
+      <span class="tag">What</span>
+      <p>Created the feature branch <code>jimjamscott22/treat-catalog-c7c5</code> off <code>main</code>.</p>
+      <div class="why">
+        <strong>Why:</strong> Isolates the feature so it can be reviewed and merged as
+        one unit, without touching <code>main</code> directly.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="step-number">4</span> Extend the data layer first</h2>
+    <p class="section-intro">
+      Following the architecture's dependency direction (routes → features → domain /
+      repositories), the lowest layer was built and tested first, before any UI existed
+      to call it.
+    </p>
+    <div class="card">
+      <span class="tag">What</span>
+      <p>
+        Added two functions to <code>src/db/repositories/treats.ts</code>:
+      </p>
+      <ul class="file-list">
+        <li><span class="badge new">new</span> <code>listCatalogTreats(db, { query, includeArchived })</code> — a favorite-first, name-sorted, optionally-archived, optionally-search-filtered listing.</li>
+        <li><span class="badge new">new</span> <code>restoreTreat(db, id)</code> — clears <code>deleted_at</code>, the mirror image of the existing <code>archiveTreat</code>.</li>
+      </ul>
+      <p>Then wrote <code>src/db/__tests__/treats.test.ts</code>: a fake in-memory
+      <code>SqliteLike</code> implementation (mirroring the style already used in
+      <code>events.test.ts</code>) that exercises create → update → favorite → archive →
+      restore → list/search, including that an id is never lost or duplicated across
+      those transitions.</p>
+      <div class="why">
+        <strong>Why this came before any screen:</strong> the repository is the single
+        place SQL is allowed to live (<code>AGENTS.md</code>: "UI components must not
+        execute SQL"). Building and unit-testing it in isolation means the UI layer can
+        be written against a contract that is already proven correct, rather than
+        debugging data and presentation bugs at the same time.
+      </div>
+      <div class="why">
+        <strong>Why archived treats are excluded by default:</strong> mirrors
+        <code>listQuickAddTreats</code>/<code>searchTreats</code>, which already exclude
+        <code>deleted_at IS NOT NULL</code> rows so archived treats never resurface during
+        normal entry — the catalog screen's "Active" view had to preserve that same
+        invariant.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="step-number">5</span> Remove duplication before adding a second consumer</h2>
+    <div class="card">
+      <span class="tag">What</span>
+      <p>
+        <code>AddTreatSheet</code> already had a small local
+        <code>useDebouncedValue</code> hook for its search field. It was moved into
+        <code>src/utils/useDebouncedValue.ts</code> before the new catalog screen needed
+        the same behavior.
+      </p>
+      <div class="why">
+        <strong>Why now, and not later:</strong> the moment a second screen needed the
+        exact same debounce behavior, leaving two copies would have meant two places to
+        keep in sync. Extracting it right before introducing the second consumer (rather
+        than duplicating first and refactoring after) keeps the diff that introduces the
+        new hook's usage clean, and there was only one call site to verify against
+        (<code>AddTreatSheet</code>'s existing, already-passing tests), so the risk of the
+        refactor was low.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="step-number">6</span> Build the reusable form/edit sheet</h2>
+    <div class="card">
+      <span class="tag">What</span>
+      <p>
+        Built <code>src/components/TreatFormSheet.tsx</code> — a modal used for both
+        creating a new catalog treat and editing an existing one, selected by a
+        <code>mode: 'create' | 'edit'</code> prop. In edit mode it also exposes either an
+        "Archive treat" action (behind a native confirmation dialog) or a "Restore
+        treat" action, depending on whether the treat passed in is already archived.
+      </p>
+      <div class="why">
+        <strong>Why one component instead of two:</strong> create and edit share every
+        field (name, category, quantity, unit, kcal per unit, favorite) and the same
+        validation. A single component with a mode switch avoids duplicating that form
+        markup, while still keeping the save call sites explicit (<code>createTreat</code>
+        vs. <code>updateTreat</code>).
+      </div>
+      <div class="why">
+        <strong>Why archiving needs confirmation and restoring doesn't:</strong>
+        <code>docs/ux-flows.md</code> requires confirming permanent-looking deletes.
+        Archiving hides a treat from search/quick-add, so it gets a confirmation;
+        restoring only reverses that, so it doesn't need one.
+      </div>
+      <div class="why">
+        <strong>Why it doesn't rewrite past events:</strong> per
+        <code>docs/data-model.md</code>'s invariant that "updates to catalog treats must
+        never mutate prior event snapshots," this sheet only ever calls
+        <code>createTreat</code> / <code>updateTreat</code> / <code>archiveTreat</code> /
+        <code>restoreTreat</code> — never anything that touches the
+        <code>treat_events</code> table.
+      </div>
+      <p>Then wrote <code>src/components/__tests__/TreatFormSheet.test.tsx</code>,
+      following the exact mocking pattern already used for <code>AddTreatSheet</code>
+      (mocking <code>../../db</code>, stubbing <code>KeyboardAvoidingView</code>), adding
+      cases for: create, quantity validation, pre-filled edit, archive-with-confirm,
+      archive-cancelled, and restore.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="step-number">7</span> Add the data hook that feeds the screen</h2>
+    <div class="card">
+      <span class="tag">What</span>
+      <p>
+        Added <code>src/features/treats/useTreatCatalog.ts</code>, following the existing
+        <code>useAsyncData</code> pattern (also used by <code>usePets</code> and
+        <code>useTodayEvents</code>): it debounces the search query, calls
+        <code>listCatalogTreats</code>, and exposes a <code>refresh()</code> the screen
+        calls after any mutation.
+      </p>
+      <div class="why">
+        <strong>Why a hook instead of fetching directly in the screen:</strong> the
+        project's read model (<code>docs/architecture.md</code>) is "components subscribe
+        to repository-backed query hooks for durable data" — durable state always comes
+        from a fresh SQLite read after a mutation, never from locally mutated state, so
+        displayed data can never drift from what is actually committed.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="step-number">8</span> Build the screen itself</h2>
+    <div class="card">
+      <span class="tag">What</span>
+      <p>
+        Added <code>app/treats.tsx</code>: a search field, an Active/Archived filter (two
+        chips), a "New treat" button, and a list of rows. Each row shows the treat's
+        name, category label, quantity/unit, and calorie estimate (or "Not entered"),
+        with a star toggle for favoriting active treats. Tapping anywhere else on a row
+        opens <code>TreatFormSheet</code> in edit mode.
+      </p>
+      <div class="why">
+        <strong>Why favoriting is a separate tap target from editing:</strong>
+        favoriting is meant to be a fast, low-risk, frequent action (it's the mechanism
+        that puts a treat in Today's quick-add area), while editing opens a full form.
+        Nesting them as two independent <code>Pressable</code>s (rather than one row with
+        conditional behavior) keeps their hit targets unambiguous and each individually
+        accessible-labeled.
+      </div>
+      <div class="why">
+        <strong>Why three explicit empty states:</strong> <code>docs/ux-flows.md</code>
+        treats "nothing here" as a normal, valid state, never an error — and specifically
+        calls out that a search with no results reads differently than a genuinely empty
+        list. The screen distinguishes "no treats yet," "no archived treats," and "no
+        matches for &lt;query&gt;" rather than using one generic empty message.
+      </div>
+      <p>Then wrote <code>app/__tests__/treats.test.tsx</code>, covering: the empty state,
+      listing with formatted metadata, the favorite toggle calling the repository without
+      opening the form, switching to the Archived filter re-querying with
+      <code>includeArchived: true</code>, opening the create form, and opening the edit
+      form pre-filled.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="step-number">9</span> Wire up navigation last</h2>
+    <div class="card">
+      <span class="tag">What</span>
+      <p>
+        Registered a <code>treats</code> route with the title "Treat catalog" in the root
+        <code>Stack</code> (<code>app/_layout.tsx</code>), and added a "Treat catalog" row
+        to the Settings screen that pushes to it.
+      </p>
+      <div class="why">
+        <strong>Why last:</strong> the screen had to exist and be internally correct
+        before anything needed to navigate to it. Wiring navigation earlier would have
+        meant pointing at a route that either didn't exist yet or wasn't finished, with
+        nothing to verify against.
+      </div>
+      <div class="why">
+        <strong>Why a Settings entry and not a header button:</strong>
+        <code>docs/ux-flows.md</code> places the treat catalog under Settings, not Today.
+        A prior comment in <code>app/(tabs)/_layout.tsx</code> also documents a real bug
+        where a header button rendered from inside a screen (rather than declared
+        statically in the parent layout) disappeared on re-render — avoided here by not
+        needing a header action at all; "New treat" lives in the screen body instead.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="step-number">10</span> Update documentation to match the shipped behavior</h2>
+    <div class="card">
+      <span class="tag">What</span>
+      <p>
+        Added one line to <code>docs/product-spec.md</code>'s Treat catalog section,
+        documenting that archived treats can be browsed separately and restored.
+      </p>
+      <div class="why">
+        <strong>Why:</strong> the literal spec text only said "archive," not "restore."
+        Adding an Archived filter and a restore action is a reasonable, low-risk
+        extension (archiving is explicitly a soft delete in
+        <code>docs/data-model.md</code>, and soft-deleted things are normally
+        recoverable) — but <code>AGENTS.md</code> requires that any user-visible
+        behavior beyond what's written be captured in the docs, not left implicit in
+        code only.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="step-number">11</span> Verify before claiming anything was done</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Type checking</h3>
+        <p><code>npm run typecheck</code> — run repeatedly as each file was added, and once more at the end against the full, final diff.</p>
+      </div>
+      <div class="card">
+        <h3>Unit &amp; component tests</h3>
+        <p><code>npm test</code> — grew from 52 → 71 passing tests: 7 repository tests, 6 component tests, 6 screen tests, and all prior tests still green.</p>
+      </div>
+      <div class="card">
+        <h3>Production export</h3>
+        <p><code>npx expo export --platform ios</code> — the actual release-shaped build check from <code>AGENTS.md</code>'s pre-completion checklist, confirmed to succeed.</p>
+      </div>
+      <div class="card">
+        <h3>What wasn't run</h3>
+        <p>No lint/formatter script exists in this project yet (a pre-existing gap, not introduced by this change) — noted rather than silently skipped. Physical-iPhone checks (VoiceOver, Dynamic Type, keyboard avoidance) were left for manual testing, since they need real hardware.</p>
+      </div>
+    </div>
+    <div class="callout">
+      <h3>Why verification is its own step, not folded into "building"</h3>
+      <p>
+        Each layer (repository → hook → sheet → screen → navigation) was verified with
+        its own tests as it was written, but the type check, full test run, and
+        production export were deliberately re-run once more, together, against the
+        finished, integrated diff — so the reported result describes the code that
+        actually shipped, not just each piece in isolation.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="step-number">12</span> Commit in dependency order, then open the PR</h2>
+    <p class="section-intro">
+      Changes were committed as five focused commits, each one buildable and each
+      logically self-contained, rather than as one large commit.
+    </p>
+    <table class="commits">
+      <thead>
+        <tr><th>#</th><th>Commit</th><th>Contains</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>Add catalog listing, and restore, to the treats repository</td>
+          <td><code>listCatalogTreats</code>, <code>restoreTreat</code>, and their tests</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Extract <code>useDebouncedValue</code> for reuse across search inputs</td>
+          <td>The shared hook, plus the small <code>AddTreatSheet</code> edit that adopts it</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Add <code>TreatFormSheet</code> and <code>useTreatCatalog</code></td>
+          <td>The reusable sheet, the data hook, and the component test suite</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>Add the Treat Catalog screen, reachable from Settings</td>
+          <td>The screen, its tests, the route registration, and the Settings entry point</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>Document that archived treats can be browsed and restored</td>
+          <td>The <code>docs/product-spec.md</code> update</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="why" style="margin-top: 18px;">
+      <strong>Why this order:</strong> it's the same order the code depends on itself —
+      data layer, then shared utility, then the components that call the data layer,
+      then the screen that composes those components, then the navigation that reaches
+      the screen, then the documentation that reflects it. A reviewer (or a future
+      reader) can check out any one commit and have a working, type-checked, tested tree
+      at every point, rather than an all-or-nothing diff.
+    </div>
+    <p style="margin-top: 16px;">
+      Finally, the branch was pushed and a draft pull request opened against
+      <code>main</code>, with a description summarizing the change, the design
+      decisions, exactly which checks were run, and which checks still need a physical
+      iPhone.
+    </p>
+  </section>
+
+  <footer>
+    Treat-Tracker · Implementation notes generated for the Treat Catalog feature ·
+    Branch <code>jimjamscott22/treat-catalog-c7c5</code>
+  </footer>
+
+</div>
+</body>
+</html>

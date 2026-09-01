@@ -19,6 +19,7 @@ function RootStack() {
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ title: 'Welcome' }} />
+        <Stack.Screen name="treats" options={{ title: 'Treat catalog' }} />
       </Stack>
     </>
   );
