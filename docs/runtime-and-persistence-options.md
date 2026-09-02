@@ -18,6 +18,14 @@ The shortest path to the requested experience is therefore:
 3. Finish versioned export and establish a backup routine before treating the
    phone as the only copy of important records.
 
+The known Raspberry Pi 5 and MariaDB service materially strengthen the
+server-backed web option. If a private URL is the primary goal, the best web
+candidate is now a web client and HTTPS API on the Pi, with a dedicated schema
+in the existing MariaDB server, exposed through Tailscale Serve. This removes
+the need to procure an always-on host or operate another database engine. It
+does not change the shortest native path or remove the web/API implementation
+work.
+
 A web app behind Tailscale Serve is viable when a private URL is more important
 than offline operation. It is not just a hosting change, however. The reliable
 version needs an always-on host, an application/API process, server-side
@@ -46,7 +54,7 @@ persistent.
 | --- | --- | --- | --- | --- | --- |
 | Standalone Expo iOS app | Native icon and launch | SQLite on the iPhone | Full | Lowest; finish EAS release work | No backup or second-device access until export/sync exists |
 | Browser-local Expo PWA | Safari “Add to Home Screen” | Browser storage on that iPhone | Possible with a service worker | Medium; web compatibility, PWA, and hosting work | Browser data is more fragile than native app data |
-| Tailscale-served web app with API | Private Home Screen URL | SQLite on an always-on host | No, unless an offline cache/outbox is added | High; add API, web repository, service management, and backup | Host and Tailscale must be available |
+| Tailscale-served web app with API | Private Home Screen URL | MariaDB on the existing Pi | No, unless an offline cache/outbox is added | Medium-high; host and database already exist, but API and web repositories do not | Pi and Tailscale must be available |
 | Managed web app and database | Public or authenticated URL | Managed Postgres/libSQL-style service | No, unless sync is designed | High; accounts, authorization, privacy, and migrations | Changes the account-free, local-first MVP |
 | Native app plus private sync/backup service | Native icon | Local SQLite plus synchronized server copy | Full | Highest; outbox, identity, conflicts, tombstones, recovery | Sync is a new subsystem, not a repository swap |
 
@@ -97,10 +105,11 @@ This option is reasonable for a convenience copy or prototype. It should not be
 the sole copy of records until export, persistent-storage checks, quota/error
 handling, and restore tests exist.
 
-### 3. Web app, server-side SQLite, and Tailscale Serve
+### 3. Web app, Raspberry Pi MariaDB, and Tailscale Serve
 
 This most closely matches “open a private URL from my iPhone and have persistent
-storage.” A practical single-user shape is:
+storage.” The existing Raspberry Pi 5 and MariaDB service make this a practical
+single-user shape:
 
 ```text
 iPhone Home Screen web app
@@ -109,36 +118,52 @@ iPhone Home Screen web app
           |
     Tailscale Serve
           |
-  127.0.0.1 web app + API
+  Pi: 127.0.0.1 web app + API
           |
-  persistent SQLite volume
+  dedicated MariaDB database
           |
  encrypted off-host backup
 ```
 
-On the Linux host:
+On the Pi:
 
 1. Export and serve the web client, or run an Expo/Node web server.
 2. Bind the application to loopback, for example `127.0.0.1:3000`.
 3. Run it under systemd or a container with a restart policy.
-4. Store SQLite on a durable local or container-mounted volume.
-5. Configure `tailscale serve --bg http://127.0.0.1:3000`.
-6. Restrict access with tailnet grants/ACLs and keep Funnel disabled unless
+4. Create a dedicated MariaDB database and application user. Restrict that user
+   to the API host and grant only the required privileges; do not use the
+   MariaDB root account.
+5. Keep MariaDB off the public internet. The browser connects only to the HTTPS
+   API and must never receive database credentials or connect directly to the
+   MariaDB port.
+6. Configure `tailscale serve --bg http://127.0.0.1:3000`.
+7. Restrict access with tailnet grants/ACLs and keep Funnel disabled unless
    deliberate public exposure is required.
-7. Enable Tailscale's VPN On Demand behavior on the iPhone if seamless tailnet
+8. Enable Tailscale's VPN On Demand behavior on the iPhone if seamless tailnet
    reconnection is important.
-8. Back up SQLite off-host with a SQLite-aware online backup or continuous WAL
-   replication such as Litestream, and regularly test restore.
+9. Include the new database in the Pi's existing MariaDB-aware backup process,
+   retain an encrypted off-host copy, and regularly test a restore.
 
 The application changes are material. UI components cannot use the current
 on-device repository directly; web requests need a validated API and a
-server-side repository. This approach also gives up the present offline
-guarantee unless the browser gains a local cache, mutation outbox, retries, and
-conflict rules.
+server-side repository using a MariaDB driver. The pure domain calculations and
+validation schemas can be shared.
 
-An always-on Raspberry Pi, NAS, home server, or small VPS can be the host. A
-laptop that sleeps is a poor host, and an ephemeral development workspace must
-not hold the only database copy.
+The current SQLite migration cannot be run unchanged against MariaDB:
+
+- `PRAGMA user_version` must become a server-side migration history table.
+- SQLite's filtered indexes using `WHERE deleted_at IS NULL` are not supported
+  directly by MariaDB and need different indexes or generated columns.
+- Boolean, timestamp, check-constraint, and transaction behavior need explicit
+  MariaDB mappings and migration tests.
+- The server needs a connection pool, bounded query timeouts, health checks,
+  and graceful shutdown.
+
+This approach also gives up the present offline guarantee unless the browser
+gains a local cache, mutation outbox, retries, and conflict rules. The Pi
+removes the hypothetical host and database setup burden, but a laptop that
+sleeps or an ephemeral development workspace should still never hold the only
+application or database copy.
 
 ### 4. Managed web hosting and database
 
@@ -182,9 +207,11 @@ the documented product requirements:
   connection.
 
 Therefore, web plus Tailscale is a useful alternative deployment target, not a
-simpler replacement for the current architecture. If the immediate problem is
-that Expo Go only works while Metro is running, a standalone EAS build solves
-that problem directly.
+simpler replacement for the current architecture. The existing Pi and MariaDB
+make it substantially more attractive than a greenfield server deployment, so
+it is now the preferred web architecture if private-URL access outweighs
+offline use. If the immediate problem is only that Expo Go requires Metro, a
+standalone EAS build still solves that problem more directly.
 
 ## Suggested decision sequence
 
@@ -196,9 +223,9 @@ that problem directly.
 3. **Prototype web only if the URL matters:** run the current screens in iPhone
    Safari and inventory platform failures before choosing browser-local or
    server-side storage.
-4. **If choosing Tailscale:** use an always-on host, supervised app process,
-   durable volume, ACLs, HTTPS headers, health checks, and tested off-host
-   backups.
+4. **If choosing Tailscale:** deploy a small API on the Pi, use a dedicated
+   least-privilege MariaDB database and user, supervise the app process, enforce
+   ACLs and HTTPS headers, and test the existing off-host backup path.
 5. **Do not add bidirectional sync incidentally:** approve a dedicated design
    before changing the source-of-truth model.
 
@@ -214,4 +241,5 @@ that problem directly.
 - [Tailscale Serve command](https://tailscale.com/docs/reference/tailscale-cli/serve)
 - [Tailscale Serve examples and access controls](https://tailscale.com/docs/reference/examples/serve)
 - [Tailscale: VPN On Demand for iOS](https://tailscale.com/docs/features/client/ios-vpn-on-demand)
-- [Litestream: How SQLite WAL replication works](https://litestream.io/how-it-works/)
+- [MariaDB: Security quickstart and least privilege](https://mariadb.com/docs/platform/mariadb-platform-quickstart-guides/security)
+- [MariaDB: Online physical backups](https://mariadb.com/docs/server/server-usage/backup-and-restore/mariadb-backup)
