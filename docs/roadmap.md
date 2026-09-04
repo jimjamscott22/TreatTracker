@@ -10,7 +10,7 @@ This roadmap is ordered by dependency and risk, not calendar estimates.
 - Strict TypeScript, formatting, linting, and test configuration
 - Theme tokens and accessible base components
 - SQLite client and numbered migration runner
-- Development, preview, and production EAS profiles
+- Development, development-simulator, preview, and production EAS profiles
 - CI checks for types, lint, tests, and Expo export
 
 ### Exit criteria

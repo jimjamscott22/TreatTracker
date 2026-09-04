@@ -10,8 +10,8 @@ Treat-Tracker should begin as a single offline-first Expo application. SQLite is
 
 Expo provides the most practical iPhone workflow for a contributor without a Mac:
 
-- Physical-device development with Expo Go when supported modules are sufficient.
-- EAS development builds when native configuration is needed.
+- Physical-device development with EAS development builds.
+- Expo Go as a fallback when no Apple Developer membership is available and the required modules ship in the Expo SDK.
 - Cloud signing and TestFlight/App Store builds through EAS.
 - Over-the-air JavaScript updates, subject to App Store rules and compatible native runtime versions.
 
@@ -199,11 +199,26 @@ Cloud sync is a new subsystem, not a repository swap. Write a dedicated synchron
 
 ## Build and release
 
-Recommended EAS profiles:
+Device builds are produced by EAS Build; no local Mac or Xcode installation is
+part of the workflow. The profiles in `eas.json` are:
 
-- `development`: internal development client.
-- `preview`: internal distribution and release-candidate testing.
-- `production`: App Store archive.
+- `development`: internal development client (`expo-dev-client`), used with a
+  local bundler started by `npm run start:dev-client`.
+- `development-simulator`: the same profile targeting the iOS Simulator.
+- `preview`: internal distribution and release-candidate testing, standalone.
+- `production`: App Store archive, submitted through `eas submit`.
+
+Build numbers come from EAS (`cli.appVersionSource: "remote"` with
+`autoIncrement` on the release profiles); only the user-visible `version` string
+is edited in `app.config.ts`. Builds are started locally through the `build:*`
+npm scripts or on demand through the `EAS Build` GitHub Actions workflow, which
+authenticates with an `EXPO_TOKEN` secret. Pull-request CI deliberately does not
+run cloud builds.
+
+EAS Update is not configured yet: `expo-updates` is not a dependency and the
+build profiles set no update channel. Adding it later means installing
+`expo-updates`, choosing a `runtimeVersion` policy, and giving each profile a
+channel.
 
 Use environment-specific application identifiers only if parallel installation is needed. Let EAS manage signing initially, using the Apple Developer team selected by the account holder. Keep configuration reproducible in `app.config.ts` and `eas.json`.
 
