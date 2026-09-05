@@ -6,6 +6,11 @@ import type { ExpoConfig } from 'expo/config';
  * Kept in app.config.ts so build settings stay reproducible and reviewable
  * (docs/architecture.md). Signing credentials are managed by EAS and must never
  * be committed here.
+ *
+ * The iOS bundle identifier and Android package below are what EAS Build signs,
+ * so changing them creates a new application rather than a new version of this
+ * one. Version bumps are handled by EAS (`appVersionSource: "remote"` in
+ * eas.json); only the user-visible `version` string is edited here.
  */
 const config: ExpoConfig = {
   name: 'Treat Tracker',
@@ -41,6 +46,13 @@ const config: ExpoConfig = {
     ],
   ],
   experiments: { typedRoutes: true },
+  extra: {
+    eas: {
+      // Written by `eas init` on first use, or supplied by CI as an
+      // environment variable so the value never has to be hardcoded here.
+      projectId: process.env.EAS_PROJECT_ID,
+    },
+  },
 };
 
 export default config;

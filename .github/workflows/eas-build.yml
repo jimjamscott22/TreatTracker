@@ -1,0 +1,71 @@
+name: EAS Build
+
+# Cloud builds consume build minutes and produce signed artifacts, so they are
+# started deliberately rather than on every push.
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: eas.json build profile
+        type: choice
+        default: preview
+        options: [development, development-simulator, preview, production]
+      platform:
+        description: Target platform
+        type: choice
+        default: ios
+        options: [ios, android, all]
+
+concurrency:
+  group: eas-build-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: EAS build
+    runs-on: ubuntu-latest
+    # EAS builds queue before they run, so allow more time than the CI job.
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      # The secrets context is not readable from a step `if`, so the token is
+      # checked through the environment instead.
+      - name: Require an Expo access token
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "EXPO_TOKEN is not configured for this repository." >&2
+            echo "Create a token at https://expo.dev/settings/access-tokens and" >&2
+            echo "add it as an Actions secret named EXPO_TOKEN." >&2
+            exit 1
+          fi
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      # --non-interactive keeps the job from hanging on credential prompts.
+      # Signing credentials stay on EAS and are never stored in this repository.
+      # Inputs are passed through the environment rather than interpolated into
+      # the shell command.
+      - name: Build
+        env:
+          EAS_PROJECT_ID: ${{ vars.EAS_PROJECT_ID }}
+          PROFILE: ${{ inputs.profile }}
+          PLATFORM: ${{ inputs.platform }}
+        run: eas build --profile "$PROFILE" --platform "$PLATFORM" --non-interactive
