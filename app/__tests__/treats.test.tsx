@@ -5,6 +5,14 @@ import type { Treat } from '../../src/domain/entities';
 import { ThemeProvider } from '../../src/theme';
 import TreatCatalogScreen from '../treats';
 
+jest.mock('react-native-safe-area-context', () => {
+  const actual = jest.requireActual('react-native-safe-area-context');
+  return {
+    ...actual,
+    useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+  };
+});
+
 jest.mock('react-native/Libraries/Components/Keyboard/KeyboardAvoidingView', () => {
   const React = require('react') as typeof import('react');
   const { View } = require('react-native') as typeof import('react-native');
