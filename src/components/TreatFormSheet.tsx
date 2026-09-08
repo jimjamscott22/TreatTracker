@@ -13,6 +13,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getDatabase, treatsRepository } from '../db';
 import {
@@ -71,6 +72,7 @@ export function TreatFormSheet({
   onRestored,
 }: Props) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const isArchived = treat?.deletedAt != null;
 
   const [name, setName] = useState('');
@@ -212,7 +214,12 @@ export function TreatFormSheet({
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.sheetContainer}
         >
-          <View style={[styles.sheet, { backgroundColor: colors.surface }]}>
+          <View
+            style={[
+              styles.sheet,
+              { backgroundColor: colors.surface, paddingBottom: spacing.lg + insets.bottom },
+            ]}
+          >
             <View style={styles.sheetHeader}>
               <Text style={[typography.title2, { color: colors.ink }]}>
                 {mode === 'edit' ? 'Edit treat' : 'New treat'}

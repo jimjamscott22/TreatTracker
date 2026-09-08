@@ -12,6 +12,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { eventsRepository, getDatabase, treatsRepository } from '../db';
 import {
@@ -60,6 +61,7 @@ function parseKcalMilli(raw: string): number | null {
 
 export function AddTreatSheet({ visible, petId, petName, onClose, onRecorded }: Props) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [step, setStep] = useState<Step>('search');
   const [query, setQuery] = useState('');
@@ -257,7 +259,12 @@ export function AddTreatSheet({ visible, petId, petName, onClose, onRecorded }: 
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.sheetContainer}
         >
-          <View style={[styles.sheet, { backgroundColor: colors.surface }]}>
+          <View
+            style={[
+              styles.sheet,
+              { backgroundColor: colors.surface, paddingBottom: spacing.lg + insets.bottom },
+            ]}
+          >
             <View style={styles.sheetHeader}>
             <Text style={[typography.title2, { color: colors.ink }]}>
               {step === 'search' ? 'Add treat' : 'New treat'}
