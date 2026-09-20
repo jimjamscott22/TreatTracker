@@ -13,7 +13,10 @@ import {
 
 import { Button } from '../src/components';
 import { getDatabase, petsRepository } from '../src/db';
+import { restoreFullBackup } from '../src/db/repositories/backup';
+import type { FullBackup } from '../src/domain/backup';
 import { petDraftSchema, type Species } from '../src/domain/entities';
+import { pickFullBackup } from '../src/features/backup/transfer';
 import { useUiStore } from '../src/state/preferences';
 import { MIN_TOUCH_TARGET, radii, spacing, typography, useTheme } from '../src/theme';
 
@@ -32,6 +35,7 @@ export default function Onboarding() {
   const [species, setSpecies] = useState<Species>('dog');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [pendingBackup, setPendingBackup] = useState<FullBackup | null>(null);
 
   async function handleSave() {
     const parsed = petDraftSchema.safeParse({ name, species });
@@ -48,6 +52,33 @@ export default function Onboarding() {
     } catch {
       // Keep the draft on screen so nothing the user typed is lost.
       setError('That pet could not be saved. Try again.');
+      setSaving(false);
+    }
+  }
+
+  async function handlePickBackup() {
+    setError(null);
+    try {
+      const backup = await pickFullBackup();
+      if (backup) setPendingBackup(backup);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'The backup could not be opened.');
+    }
+  }
+
+  async function handleImport() {
+    if (!pendingBackup) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await restoreFullBackup(await getDatabase(), pendingBackup);
+      const active = pendingBackup.pets.find((pet) => pet.deleted_at === null && pet.is_active === 1)
+        ?? pendingBackup.pets.find((pet) => pet.deleted_at === null);
+      setActivePet(active?.id ?? null);
+      router.replace('/');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'The backup could not be imported.');
+    } finally {
       setSaving(false);
     }
   }
@@ -121,11 +152,26 @@ export default function Onboarding() {
           </Text>
         ) : null}
 
-        <Button label="Continue" onPress={handleSave} busy={saving} />
+        <Button label="Continue" onPress={handleSave} busy={saving} disabled={pendingBackup !== null} />
 
         <Text style={[typography.caption, { color: colors.mutedInk }]}>
           Everything stays on this device. You can add more details later.
         </Text>
+
+        <View style={styles.field}>
+          <Text style={[typography.headline, { color: colors.ink }]}>Moving from Expo Go?</Text>
+          <Text style={[typography.body, { color: colors.mutedInk }]}>Import your saved JSON backup before creating a pet or logging treats here.</Text>
+          <Button label="Choose backup from Files" onPress={handlePickBackup} variant="secondary" disabled={saving} />
+          {pendingBackup ? (
+            <View style={styles.field}>
+              <Text style={[typography.body, { color: colors.ink }]} accessibilityLiveRegion="polite">
+                Ready to import {pendingBackup.pets.length} pets, {pendingBackup.treats.length} treats, and {pendingBackup.events.length} entries.
+              </Text>
+              <Button label="Import backup" onPress={handleImport} busy={saving} />
+              <Button label="Cancel import" onPress={() => setPendingBackup(null)} variant="ghost" disabled={saving} />
+            </View>
+          ) : null}
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

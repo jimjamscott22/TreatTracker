@@ -134,6 +134,12 @@ npm run start:dev-client
 `preview` and `production` builds embed the JavaScript bundle and need no
 bundler at all.
 
+If you recorded treats in Expo Go first, do not create a pet or entry in the
+new standalone installation yet. Save a full backup from Expo Go Settings to
+Files, then import it on the standalone welcome screen and verify the results.
+The apps do not share or synchronize their SQLite databases; see
+[Full-device backup and iPhone transfer](docs/backup-transfer.md).
+
 ### 4. TestFlight
 
 ```bash
@@ -170,11 +176,11 @@ typechecks, tests, and exports, so pull requests do not consume build minutes.
 
 ## Running on an iPhone with Expo Go
 
-Expo Go remains a useful fallback when there is no Apple Developer membership yet, or for a quick look at a branch without waiting on a cloud build. Expo Go is a free sandbox app from Apple's App Store that can load and run this project directly, with no Mac and no Apple Developer account required. This is the fastest way to try the app on a real device during development.
+Expo Go remains a temporary fallback when there is no Apple Developer membership yet. The repository uses SDK 54, which the App Store version of Expo Go supports. Expo Go needs the Pi's development server to be reachable when launching the project. Records are stored on the iPhone inside Expo Go, separately from a later standalone build; use the [full-device backup and import flow](docs/backup-transfer.md) to transfer them.
 
 ### 1. Install Expo Go on the iPhone
 
-Install **Expo Go** from the [App Store](https://apps.apple.com/app/expo-go/id982107779). Optionally sign in with (or create) a free Expo account in the app — this makes reconnecting to your project easier and isn't required to get started.
+Install **Expo Go** from the [App Store](https://apps.apple.com/app/expo-go/id982107779). Sign in with a free Expo account on the iPhone and use the same account on the Pi (`npx expo login`).
 
 ### 2. Install dependencies on your computer
 
@@ -187,10 +193,10 @@ npm install
 ### 3. Start the Expo dev server
 
 ```bash
-npm start
+npx expo start --go --host lan --port 8081
 ```
 
-This runs `expo start` and prints a QR code in the terminal, along with a small interactive menu (press `?` to see all options). Leave this process running while you develop — it rebuilds your JavaScript bundle and pushes updates to the app automatically.
+The explicit `--go` flag matters because this project has `expo-dev-client` installed; otherwise Expo defaults to a development build. Scan the QR code while the phone is on the same home Wi-Fi. For a Pi service that survives reboots, see [Pi Expo Go service](docs/pi-expo-go.md).
 
 ### 4. Connect your iPhone
 
@@ -213,7 +219,7 @@ This runs `expo start` and prints a QR code in the terminal, along with a small 
 
 ### Known Expo Go limitation: notifications
 
-Expo Go does not support **remote/push** notifications as of Expo SDK 53+ (this project targets SDK 57). **Local** notifications — which is what `expo-notifications` is used for here — are fully supported in Expo Go. If the project later adds server-sent push notifications, testing those will require an EAS development build rather than Expo Go.
+Expo Go does not support **remote/push** notifications as of Expo SDK 53+ (this project targets SDK 54). **Local** notifications — which is what `expo-notifications` is used for here — are supported in Expo Go. If the project later adds server-sent push notifications, testing those will require an EAS development build rather than Expo Go.
 
 ## Implementation progress
 

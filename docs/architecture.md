@@ -166,6 +166,11 @@ Notification denial is a normal state. Never block app usage or repeatedly promp
 
 Export is generated locally from repository queries. Include a format version and application version. Escape spreadsheet formulas in CSV fields beginning with `=`, `+`, `-`, or `@`. Use the native share sheet only after the file is complete.
 
+Full-device backup and restore have a separate contract in
+[backup-transfer.md](backup-transfer.md). The repository reads all tables in a
+consistent transaction and imports only after whole-file validation. Restore
+uses a native SQLite exclusive transaction and refuses nonempty targets.
+
 ## Optional cloud phase
 
 If shared households or backup justify cloud infrastructure:

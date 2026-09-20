@@ -1,0 +1,18 @@
+[Unit]
+Description=Treat Tracker Expo Go server (home LAN)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=@SERVICE_USER@
+Environment=HOME=@SERVICE_HOME@
+Environment=PATH=@NODE_DIRECTORY@:/usr/local/bin:/usr/bin:/bin
+Environment=CI=1
+WorkingDirectory=/opt/treat-tracker-expo/current
+ExecStart=@NODE_BINARY@ /opt/treat-tracker-expo/current/node_modules/expo/bin/cli start --go --host lan --port 8081
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

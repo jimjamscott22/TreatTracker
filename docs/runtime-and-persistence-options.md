@@ -15,8 +15,9 @@ The shortest path to the requested experience is therefore:
 1. Create an EAS preview build for a single registered iPhone, or use
    TestFlight while preparing an App Store release.
 2. Keep the existing on-device SQLite architecture.
-3. Finish versioned export and establish a backup routine before treating the
-   phone as the only copy of important records.
+3. Use the full-device JSON backup and fresh-install restore described in
+   [backup-transfer.md](backup-transfer.md), and establish a routine for saving
+   and verifying copies before treating the phone as the only copy of records.
 
 The known Raspberry Pi 5 and MariaDB service materially strengthen the
 server-backed web option. If a private URL is the primary goal, the best web
@@ -75,7 +76,8 @@ production profiles.
 
 SQLite survives ordinary app termination, suspension, phone restarts, and app
 updates. It should not be described as a backup: deleting the app can delete its
-local records, and Treat-Tracker's export flow is still roadmap work.
+local records. Treat-Tracker now has a full-device JSON backup, while selected
+range CSV/JSON exports remain roadmap work.
 
 ### 2. Browser-local Expo PWA
 

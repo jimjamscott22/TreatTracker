@@ -157,6 +157,13 @@ Avoid reminders phrased as medical or guilt-inducing warnings.
 
 ## Export
 
+For a full-device transfer, Settings offers **Save backup to Files**. The
+welcome screen offers **Choose backup from Files** before pet creation, previews
+record counts, and imports only into an empty database. The user verifies the
+new copy before stopping use of Expo Go. See [backup-transfer.md](backup-transfer.md).
+
+The selected-pet/date-range sharing flow remains:
+
 1. User chooses pet, date range, and JSON or CSV.
 2. Preview shows entry count and included dates.
 3. App creates the file locally.

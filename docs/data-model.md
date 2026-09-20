@@ -190,6 +190,11 @@ Never edit a released migration. Add a new numbered migration.
 
 ## Export contract
 
+Full-device backup and fresh-install restore use the separate, versioned
+contract in [backup-transfer.md](backup-transfer.md). It includes every table,
+archived rows, and tombstones. The selected pet/date-range export below is a
+future sharing feature and is not accepted by the restore flow.
+
 The JSON export root should include:
 
 ```json

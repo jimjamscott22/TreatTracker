@@ -117,6 +117,7 @@ Treats are often given casually by more than one person. By the end of the day, 
 - Export a versioned CSV or JSON file for a selected pet and date range.
 - Include timestamps, local dates, treat snapshots, quantities, calorie estimates, and notes.
 - Do not send exported data to a server unless the user explicitly chooses a share target.
+- Provide a separate full-device JSON backup and an import into an empty installation so records can move from Expo Go to the standalone iPhone app without a cloud account.
 
 ## Calculation definitions
 
